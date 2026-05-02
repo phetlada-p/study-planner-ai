@@ -1,4 +1,4 @@
-https://study-planner-ai-lmlr.onrender.com
+const API_URL = https://study-planner-ai-lmlr.onrender.com
 
 async function addSubject() {
     const subject = document.getElementById("subject").value;
