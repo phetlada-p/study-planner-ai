@@ -2,10 +2,9 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 from datetime import datetime
-import os # สำคัญ: ต้องใช้เพื่อรันบน Render
+import os 
 
-app = Flask(__name__)
-CORS(app)
+app = Flask(__name__, static_folder='.', static_url_path='')
 
 # ฟังก์ชันเชื่อมต่อฐานข้อมูล
 def db():
