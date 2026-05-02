@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Study Planner AI - Calendar Mode</title>
+    <style>
+        body { font-family: 'Tahoma', sans-serif; background: #f5e6eb; display: flex; justify-content: center; padding: 20px; }
+        .container { width: 100%; max-width: 800px; background: #fff; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #ff4d88; }
+        label { font-weight: bold; display: block; margin-top: 15px; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        .btn-add { width: 100%; padding: 14px; margin-top: 20px; background: #ff4d88; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
+        .btn-plan { background: #6c5ce7; color: white; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        .btn-pri { background: #fd79a8; color: white; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+        
+        #subjectList li { background: #fdfdfd; padding: 15px; margin-top: 10px; border-radius: 12px; list-style: none; border-left: 6px solid #ff4d88; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .delete-btn { background: #ff4444; color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; }
+        
+        /* Calendar UI */
+        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 15px; }
+        .calendar-day { background: #fff; border: 1px solid #ffb3cc; border-radius: 12px; padding: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .day-number { display: block; font-weight: bold; color: #ff4d88; border-bottom: 1px solid #f5e6eb; margin-bottom: 5px; }
+        .day-hours { font-size: 13px; color: #555; }
+        .diff-tag { font-size: 11px; color: #ff4d88; background: #fff0f5; padding: 2px 8px; border-radius: 10px; border: 1px solid #ffb3cc; margin-left: 10px; }
+        
+        #result { margin-top: 30px; padding: 20px; background: #fff9fb; border-radius: 15px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Study Planner AI</h1>
+        <label>ชื่อวิชา</label><input id="subject" type="text" placeholder="เช่น วิเคราะห์ระบบ">
+        <label>วันที่เริ่ม</label><input type="date" id="assignedDate">
+        <label>วันส่ง (Deadline)</label><input type="date" id="deadline">
+        <label>ระดับความยาก</label>
+        <select id="difficulty">
+            <option value="1">ง่าย (10 ชม.)</option>
+            <option value="2">ปานกลาง (30 ชม.)</option>
+            <option value="3">ยาก (60 ชม.)</option>
+        </select>
+        <button class="btn-add" onclick="addSubject()">➕ เพิ่มวิชา</button>
+
+        <div style="font-weight:bold; margin-top:30px;">📋 รายการที่บันทึก</div>
+        <ul id="subjectList"></ul>
+
+        <div class="btn-group">
+            <button class="btn-plan" onclick="showSchedule()">📅 ตารางปฏิทิน</button>
+            <button class="btn-pri" onclick="showPriority()">🔥 ลำดับความสำคัญ</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+    <script src="scrip.js"></script>
+</body>
+</html>
