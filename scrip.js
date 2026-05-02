@@ -1,5 +1,4 @@
-// หากใช้ Ngrok ให้เปลี่ยน URL นี้เป็นลิงก์ Ngrok ของคุณ
-const API_URL = "http://127.0.0.1:5000";
+https://study-planner-ai-lmlr.onrender.com
 
 async function addSubject() {
     const subject = document.getElementById("subject").value;
