@@ -4,7 +4,6 @@ import sqlite3
 from datetime import datetime
 import os
 
-# ตั้งค่าให้ Flask รู้จักไฟล์หน้าเว็บ
 app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
@@ -73,7 +72,6 @@ def schedule():
             total_needed = [10, 30, 60][s["difficulty"] - 1]
             hours_decimal = total_needed / days 
 
-            # คำนวณ ชม. และ นาที
             h = int(hours_decimal)
             m = int(round((hours_decimal - h) * 60))
             
