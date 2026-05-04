@@ -75,7 +75,6 @@ function showSchedule() {
         const totalHours = [10, 30, 60][s.difficulty - 1];
         const hoursPerDay = totalHours / days;
 
-        // แปลง ชม. ทศนิยม เป็น ชม. และ นาที
         const h = Math.floor(hoursPerDay);
         const m = Math.round((hoursPerDay - h) * 60);
         let timeText = h > 0 ? `${h} ชม. ` : "";
@@ -94,12 +93,10 @@ function showSchedule() {
     });
 }
 
-// ฟังก์ชัน: เรียงลำดับความสำคัญ
 function showPriority() {
     let subjects = JSON.parse(localStorage.getItem("my_study_data") || "[]");
     const result = document.getElementById("result");
     
-    // เรียงตามวันส่ง (น้อยไปมาก)
     subjects.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
     result.innerHTML = "<h3>🔥 ลำดับความสำคัญ (ในเครื่องนี้)</h3>";
@@ -108,5 +105,4 @@ function showPriority() {
     ).join('') + "</ol>";
 }
 
-// สั่งให้โหลดข้อมูลทันทีที่เปิดหน้าเว็บ
 loadSubjects();
