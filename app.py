@@ -30,14 +30,24 @@ init()
 def index():
     return send_from_directory('.', 'index.html')
 
+# เพิ่ม Route สำหรับส่งไฟล์ JS ป้องกันปัญหา 404
+@app.route("/script.js")
+def serve_js():
+    return send_from_directory('.', 'script.js')
+
 @app.route("/subjects", methods=["GET", "POST"])
 def subjects():
     conn = db()
     if request.method == "POST":
         d = request.json
+        # ป้องกันค่าว่าง
+        if not d.get("name") or not d.get("deadline"):
+            return jsonify({"error": "Missing data"}), 400
+            
         conn.execute("INSERT INTO subjects(name,assigned_date,deadline,difficulty) VALUES (?,?,?,?)",
-                     (d["name"], d["assigned_date"], d["deadline"], d.get("difficulty", 1)))
+                     (d["name"], d.get("assigned_date"), d["deadline"], int(d.get("difficulty", 1))))
         conn.commit()
+        conn.close()
         return jsonify({"ok": True})
     
     rows = conn.execute("SELECT * FROM subjects").fetchall()
@@ -55,7 +65,8 @@ def delete_subject(id):
 @app.route("/schedule")
 def schedule():
     conn = db()
-    rows = conn.execute("SELECT * FROM subjects").fetchall()
+    # ให้ตารางแสดงผลเรียงตามความยากด้วย
+    rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
     result = []
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
@@ -63,6 +74,7 @@ def schedule():
     for s in rows:
         try:
             deadline_date = datetime.fromisoformat(s["deadline"])
+            # คำนวณวันโดยไม่นับเวลาวินาที เพื่อความแม่นยำ
             days = (deadline_date - datetime.now()).days + 1
             
             if days <= 0:
@@ -70,20 +82,10 @@ def schedule():
                 continue
 
             total_needed = [10, 30, 60][s["difficulty"] - 1]
-            hours_decimal = total_needed / days 
+            total_minutes = total_needed * 60
+            minutes_per_day = int(total_minutes / days) + (1 if (total_minutes / days) % 1 > 0 else 0)
 
-            # คำนวณ ชม. และ นาที
-            h = int(hours_decimal)
-            m = int(round((hours_decimal - h) * 60))
-            
-            if h > 0 and m > 0:
-                time_text = f"{h} ชม. {m} นาที"
-            elif h > 0:
-                time_text = f"{h} ชม."
-            else:
-                time_text = f"{m} นาที"
-
-            plan = [f"อ่านวันละ {time_text}" for i in range(days)]
+            plan = [f"อ่านวันละ {minutes_per_day} นาที" for i in range(days)]
             
             result.append({
                 "subject": s["name"],
@@ -96,7 +98,8 @@ def schedule():
 @app.route("/prioritize")
 def prioritize():
     conn = db()
-    rows = conn.execute("SELECT * FROM subjects ORDER BY deadline ASC, difficulty DESC").fetchall()
+    # *** จุดสำคัญ: เรียงความยาก (DESC) มาก่อน ***
+    rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
     return jsonify([{"name": r["name"], "deadline": r["deadline"], "difficulty": diff_labels.get(r["difficulty"], "ไม่ระบุ")} for r in rows])
