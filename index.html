@@ -7,64 +7,46 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Kanit', sans-serif; background-color: #fce7f3; }
-        .pink-gradient { background: #ff4d8d; }
-        .pink-gradient:hover { background: #ff3377; }
-        .purple-btn { background: #7c66e3; }
-        .pink-btn { background: #ff85b3; }
+        body { font-family: 'Kanit', sans-serif; background-color: #fff5f7; }
+        .pink-btn { background-color: #ff4d8d; }
     </style>
 </head>
 <body class="p-4 md:p-10">
-    <div class="max-w-4xl mx-auto bg-white p-8 rounded-[2rem] shadow-sm border border-pink-100">
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-[2.5rem] shadow-sm border border-pink-100">
         <h1 class="text-4xl font-bold mb-8 text-center text-[#ff4d8d]">📚 Study Planner AI</h1>
         
-        <div class="space-y-5 mb-8">
-            <div>
-                <label class="block font-bold mb-2">ชื่อวิชา</label>
-                <input id="name" type="text" placeholder="เช่น วิเคราะห์ระบบ" class="w-full p-3 border rounded-xl bg-white shadow-sm focus:ring-2 focus:ring-pink-300 outline-none">
-            </div>
+        <div class="space-y-4 mb-8">
+            <label class="block font-bold -mb-3">ชื่อวิชา</label>
+            <input id="name" type="text" placeholder="เช่น วิเคราะห์ระบบ" class="w-full p-3 border rounded-xl outline-none">
+            
+            <label class="block font-bold -mb-3">วันที่เริ่ม</label>
+            <input id="assigned_date" type="date" class="w-full p-3 border rounded-xl outline-none">
+            
+            <label class="block font-bold -mb-3">วันส่ง (Deadline)</label>
+            <input id="deadline" type="date" class="w-full p-3 border rounded-xl outline-none">
+            
+            <label class="block font-bold -mb-3">ระดับความยาก</label>
+            <select id="difficulty" class="w-full p-3 border rounded-xl outline-none">
+                <option value="1">ง่าย (10 ชม.)</option>
+                <option value="2">ปานกลาง (30 ชม.)</option>
+                <option value="3">ยาก (60 ชม.)</option>
+            </select>
 
-            <div>
-                <label class="block font-bold mb-2">วันที่เริ่ม</label>
-                <input id="assigned_date" type="date" class="w-full p-3 border rounded-xl bg-white shadow-sm outline-none">
-            </div>
-
-            <div>
-                <label class="block font-bold mb-2">วันส่ง (Deadline)</label>
-                <input id="deadline" type="date" class="w-full p-3 border rounded-xl bg-white shadow-sm outline-none">
-            </div>
-
-            <div>
-                <label class="block font-bold mb-2">ระดับความยาก</label>
-                <select id="difficulty" class="w-full p-3 border rounded-xl bg-white shadow-sm outline-none">
-                    <option value="1">ง่าย (10 ชม.)</option>
-                    <option value="2">ปานกลาง (30 ชม.)</option>
-                    <option value="3">ยาก (60 ชม.)</option>
-                </select>
-            </div>
-
-            <button onclick="addSubject()" class="w-full pink-gradient text-white py-4 rounded-2xl font-bold text-xl shadow-lg transition-all active:scale-95">
+            <button onclick="addSubject()" class="w-full pink-btn text-white py-4 rounded-2xl font-bold text-xl shadow-md mt-2">
                 + เพิ่มวิชา
             </button>
         </div>
 
-        <h2 class="text-xl font-bold mb-4 flex items-center gap-2">📋 รายการที่บันทึก</h2>
-        <div id="list" class="space-y-4 mb-8 min-h-[50px]">
-            <!-- ข้อมูลวิชาจะแสดงที่นี่ -->
-        </div>
+        <h2 class="text-xl font-bold mb-4 italic">📋 รายการที่บันทึก</h2>
+        <div id="list" class="space-y-3 mb-8"></div>
         
         <div class="grid grid-cols-2 gap-4">
-            <button onclick="loadSchedule()" class="purple-btn text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md">
-                📅 ตารางปฏิทิน
-            </button>
-            <button onclick="loadPriority()" class="pink-btn text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-md">
-                🔥 ลำดับความสำคัญ
-            </button>
+            <button onclick="loadSchedule()" class="bg-[#7c66e3] text-white py-3 rounded-xl font-bold shadow-sm">📅 ตารางปฏิทิน</button>
+            <button onclick="loadPriority()" class="bg-[#ff85b3] text-white py-3 rounded-xl font-bold shadow-sm">🔥 ลำดับความสำคัญ</button>
         </div>
         
-        <div id="result" class="mt-6 p-6 bg-[#fff9fb] rounded-2xl min-h-[100px] border border-pink-50"></div>
+        <div id="result" class="mt-8 p-6 bg-[#fffcfd] rounded-3xl min-h-[100px] border border-pink-50"></div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>
