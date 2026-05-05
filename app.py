@@ -40,12 +40,15 @@ def subjects():
         d = request.json
         try:
             conn = get_db()
+            assigned = d.get("assigned_date") if d.get("assigned_date") else datetime.now().strftime("%Y-%m-%d")
+            
             conn.execute("INSERT INTO subjects(name,assigned_date,deadline,difficulty) VALUES (?,?,?,?)",
-                         (d["name"], d["assigned_date"], d["deadline"], int(d.get("difficulty", 1))))
+                         (d["name"], assigned, d["deadline"], int(d.get("difficulty", 1))))
             conn.commit()
             conn.close()
             return jsonify({"ok": True})
         except Exception as e:
+            print(f"Error: {e}") 
             return jsonify({"error": str(e)}), 500
     
     conn = get_db()
