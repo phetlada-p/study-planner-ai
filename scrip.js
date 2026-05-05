@@ -1,6 +1,5 @@
-const API = ""; // ปล่อยว่างไว้เมื่อใช้บน Render
+const API = ""; 
 
-// เพิ่มวิชา
 async function addSubject() {
     const name = document.getElementById('name').value;
     const deadline = document.getElementById('deadline').value;
@@ -8,7 +7,7 @@ async function addSubject() {
     const difficulty = document.getElementById('difficulty').value;
 
     if (!name || !deadline) {
-        alert("กรุณากรอกข้อมูลให้ครบครับ");
+        alert("กรุณากรอกข้อมูลให้ครบ");
         return;
     }
 
@@ -23,12 +22,9 @@ async function addSubject() {
         })
     });
 
-    if (res.ok) {
-        location.reload();
-    }
+    if (res.ok) location.reload();
 }
 
-// แสดงรายการวิชา
 async function init() {
     try {
         const res = await fetch(`${API}/subjects`);
@@ -36,10 +32,6 @@ async function init() {
         const list = document.getElementById('list');
         list.innerHTML = "";
         
-        if (data.length === 0) {
-            list.innerHTML = `<p class="text-center text-gray-400 py-4 text-sm">ยังไม่มีวิชาในรายการ</p>`;
-        }
-
         data.forEach(s => {
             list.innerHTML += `
             <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-pink-50 shadow-sm">
@@ -50,23 +42,32 @@ async function init() {
                 <button onclick="deleteSubject(${s.id})" class="text-red-400 hover:text-red-600 font-bold text-sm">ลบ</button>
             </div>`;
         });
-    } catch (e) {
-        console.error("Error loading subjects:", e);
-    }
+    } catch (e) { console.error(e); }
 }
 
-// เรียงลำดับความสำคัญ
 async function loadPriority() {
     const res = await fetch(`${API}/prioritize`);
     const data = await res.json();
-    let html = "<b>🔥 เรียงตามวันส่ง (ใกล้สุดขึ้นก่อน):</b><br><br>";
+    let html = "<b>🔥 เรียงตามวันส่ง:</b><br><br>";
     data.forEach((s, i) => {
         html += `${i+1}. <strong>${s.name}</strong> - <small>${s.deadline}</small><br>`;
     });
     document.getElementById('result').innerHTML = html;
 }
 
-// ลบวิชา
+async function loadSchedule() {
+    const res = await fetch(`${API}/schedule`);
+    const data = await res.json();
+    let html = "<b>📅 แผนการอ่านหนังสือรายวัน:</b><br><br>";
+    if (data.length === 0) html += "ยังไม่มีข้อมูล";
+    data.forEach((s) => {
+        html += `<div class="mb-2 p-3 bg-blue-50 rounded-xl border border-blue-100 text-blue-800 text-xs">
+                    <strong>📘 ${s.subject}</strong>: ${s.plan}
+                 </div>`;
+    });
+    document.getElementById('result').innerHTML = html;
+}
+
 async function deleteSubject(id) {
     if (confirm("ต้องการลบวิชานี้ใช่หรือไม่?")) {
         await fetch(`${API}/delete_subject/${id}`, { method: 'DELETE' });
