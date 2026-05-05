@@ -36,10 +36,11 @@ async function init(mode = 'normal') {
         const data = await res.json();
         const list = document.getElementById('list');
         
-        list.innerHTML = `<h3 class="font-bold text-gray-500 mb-2 italic text-sm">📖 รายการวิชา (ส่งด่วนขึ้นก่อน)</h3>`;
+        list.innerHTML = `<h3 class="font-bold text-gray-500 mb-2 italic text-sm">📖 รายการวิชาของคุณ</h3>`;
         
+        let subjectsHTML = "";
         data.forEach(s => {
-            list.innerHTML += `
+            subjectsHTML += `
             <div class="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm border border-pink-50 mb-2">
                 <div>
                     <div class="font-bold text-gray-700">${s.name}</div>
@@ -49,12 +50,20 @@ async function init(mode = 'normal') {
             </div>`;
         });
 
+        list.innerHTML += subjectsHTML;
+
         if (mode === 'priority') {
-            document.getElementById('result').innerHTML = `
-                <div class="text-center py-20 animate-pulse">
-                    <h3 class="text-3xl font-bold text-[#ff85b3] mb-4 italic">🔥 จัดลำดับงานสำเร็จ!</h3>
-                    <p class="text-gray-500">วิชาที่ต้องส่งเร็วที่สุดถูกเลื่อนขึ้นมาให้แล้วทางซ้ายมือค่ะ</p>
-                    <div class="mt-8 text-5xl">🎯</div>
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = `
+                <div class="text-center py-10">
+                    <h3 class="text-3xl font-bold text-[#ff85b3] mb-3 italic">🔥 จัดลำดับสำเร็จ!</h3>
+                    <p class="text-gray-500 mb-8">วิชาที่ต้องส่งเร็วที่สุดถูกเลื่อนขึ้นมาให้แล้วด้านล่างนี้ค่ะ</p>
+                    <div class="mt-8 text-5xl mb-10">🎯</div>
+                    
+                    <div class="text-left max-w-md mx-auto space-y-3">
+                        <h4 class="font-bold text-gray-600 mb-4 border-b pb-2">📋 ลำดับงานด่วนของคุณ:</h4>
+                        ${subjectsHTML.replace(/<button.*?button>/g, '')} </div>
                 </div>
             `;
         }
@@ -106,4 +115,5 @@ async function deleteSubject(id) {
     }
 }
 
+// เรียกใช้ครั้งแรกเพื่อโหลดรายการ
 init();
