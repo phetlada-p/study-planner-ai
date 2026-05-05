@@ -1,120 +1,79 @@
-// ฟังก์ชันหลัก: เพิ่มวิชาลงในเครื่อง (localStorage)
-function addSubject() {
-    const subject = document.getElementById("subject").value;
-    const assigned = document.getElementById("assignedDate").value;
-    const deadline = document.getElementById("deadline").value;
-    const difficulty = document.getElementById("difficulty").value;
+const API = ""; 
 
-    if (!subject || !assigned || !deadline) return alert("กรอกข้อมูลให้ครบ!");
+async function addSubject() {
+    const name = document.getElementById('name').value;
+    const deadline = document.getElementById('deadline').value;
+    const assigned = document.getElementById('assigned_date').value;
+    const diff = document.getElementById('difficulty').value;
 
-    // 1. ดึงข้อมูลเก่าในเครื่องมา (ถ้าไม่มีให้เริ่มด้วยรายการว่าง [])
-    let subjects = JSON.parse(localStorage.getItem("my_study_data") || "[]");
+    if (!name || !deadline) return alert("กรุณากรอกข้อมูลให้ครบ");
 
-    // 2. สร้างข้อมูลวิชาใหม่
-    const newSubject = {
-        id: Date.now(), // ใช้ตัวเลขเวลาเป็น ID เพื่อให้ไม่ซ้ำกัน
-        name: subject,
-        assigned_date: assigned,
+    const data = {
+        name: name,
         deadline: deadline,
-        difficulty: parseInt(difficulty)
-    };
+        assigned_date: assigned || new Date().toISOString().split('T')[0],
+        difficulty: parseInt(diff) 
 
-    // 3. เพิ่มวิชาใหม่เข้าไปในรายการเดิม
-    subjects.push(newSubject);
-
-    // 4. บันทึกกลับลงไปในเครื่อง
-    localStorage.setItem("my_study_data", JSON.stringify(subjects));
-
-    alert("บันทึกข้อมูลลงเครื่องนี้เรียบร้อยแล้ว!");
-    document.getElementById("subject").value = "";
-    loadSubjects(); // อัปเดตรายการที่โชว์หน้าเว็บ
-}
-
-// ฟังก์ชัน: โหลดข้อมูลจากเครื่องมาแสดงผล
-function loadSubjects() {
-    let subjects = JSON.parse(localStorage.getItem("my_study_data") || "[]");
-    const list = document.getElementById("subjectList");
+    const res = await fetch(`${API}/subjects`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
     
-    if (subjects.length === 0) {
-        list.innerHTML = "<p style='color:gray;'>ยังไม่มีข้อมูลในเครื่องนี้</p>";
-        return;
-    }
-
-    list.innerHTML = subjects.map(s => `
-        <li>
-            <strong>${s.name}</strong> <small>(ส่ง: ${s.deadline})</small>
-            <button class="delete-btn" onclick="deleteSubject(${s.id})">ลบ</button>
-        </li>`).join('');
+    if(res.ok) location.reload();
 }
 
-// ฟังก์ชัน: ลบข้อมูลออกจากเครื่อง
-function deleteSubject(id) {
-    if(!confirm("ยืนยันการลบรายการนี้?")) return;
-    let subjects = JSON.parse(localStorage.getItem("my_study_data") || "[]");
-    subjects = subjects.filter(s => s.id !== id);
-    localStorage.setItem("my_study_data", JSON.stringify(subjects));
-    loadSubjects();
-}
-
-// ฟังก์ชัน: แสดงตารางปฏิทิน (คำนวณสดจากข้อมูลในเครื่อง)
-function showSchedule() {
-    let subjects = JSON.parse(localStorage.getItem("my_study_data") || "[]");
-    const result = document.getElementById("result");
-    result.innerHTML = "<h3>📅 ตารางอ่านหนังสือ (เฉพาะเครื่องนี้)</h3>";
-
-    if (subjects.length === 0) {
-        result.innerHTML += "<p>ไม่มีข้อมูลให้คำนวณ กรุณาเพิ่มวิชาก่อนครับ</p>";
+async function init() {
+    const res = await fetch(`${API}/subjects`);
+    const data = await res.json();
+    const list = document.getElementById('list');
+    if(data.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-400">ยังไม่มีข้อมูล</p>';
         return;
     }
-
-    subjects.forEach(s => {
-        const deadlineDate = new Date(s.deadline);
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        
-        const diffTime = deadlineDate - today;
-        const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
-        if (days <= 0) {
-            result.innerHTML += `<h4>📘 ${s.name}</h4><p style="color:red;">⚠️ เกินกำหนดส่งแล้ว!</p>`;
-            return;
-        }
-
-        const totalHours = [10, 30, 60][s.difficulty - 1];
-        const hoursPerDay = totalHours / days;
-
-        // แปลง ชม. ทศนิยม เป็น ชม. และ นาที
-        const h = Math.floor(hoursPerDay);
-        const m = Math.round((hoursPerDay - h) * 60);
-        let timeText = h > 0 ? `${h} ชม. ` : "";
-        timeText += m > 0 ? `${m} นาที` : "";
-
-        let html = `<div style="margin-top:20px; border-bottom: 1px solid #eee; padding-bottom:10px;">
-                        <h4>📘 ${s.name} <span class="diff-tag">ระดับ: ${s.difficulty}</span></h4>
-                        <div class="calendar-grid">`;
-        for(let i=0; i<days; i++) {
-            html += `<div class="calendar-day">
-                        <span class="day-number">วันที่ ${i+1}</span>
-                        <span class="day-hours">⏳ ${timeText}</span>
-                    </div>`;
-        }
-        result.innerHTML += html + `</div></div>`;
+    data.forEach(s => {
+        list.innerHTML += `
+        <div class="flex justify-between items-center p-4 bg-white border-l-8 border-pink-500 rounded-xl shadow-sm">
+            <div><div class="font-bold">${s.name}</div><div class="text-xs text-gray-400">ส่ง: ${s.deadline}</div></div>
+            <button onclick="deleteSubject(${s.id})" class="text-red-500 font-bold">ลบ</button>
+        </div>`;
     });
 }
 
-// ฟังก์ชัน: เรียงลำดับความสำคัญ
-function showPriority() {
-    let subjects = JSON.parse(localStorage.getItem("my_study_data") || "[]");
-    const result = document.getElementById("result");
-    
-    // เรียงตามวันส่ง (น้อยไปมาก)
-    subjects.sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-    result.innerHTML = "<h3>🔥 ลำดับความสำคัญ (ในเครื่องนี้)</h3>";
-    result.innerHTML += "<ol>" + subjects.map(s => 
-        `<li><strong>${s.name}</strong> - ส่ง ${s.deadline} (ยากระดับ: ${s.difficulty})</li>`
-    ).join('') + "</ol>";
+async function loadPriority() {
+    const res = await fetch(`${API}/prioritize`);
+    const data = await res.json();
+    let html = '<h3 class="font-bold text-pink-600 mb-3 underline text-xl text-center">🔥 เรียงตามลำดับความยาก</h3>';
+    data.forEach((s, i) => {
+        
+        html += `<div class="p-3 bg-white mb-2 rounded-xl shadow-sm border border-pink-100 font-bold">
+            ${i+1}. ${s.name} <span class="text-pink-500 font-normal">(ยากระดับ: ${s.difficulty})</span>
+        </div>`;
+    });
+    document.getElementById('result').innerHTML = html;
 }
 
-// สั่งให้โหลดข้อมูลทันทีที่เปิดหน้าเว็บ
-loadSubjects();
+async function loadSchedule() {
+    const res = await fetch(`${API}/schedule`);
+    const data = await res.json();
+    let html = '';
+    data.forEach(s => {
+        html += `<div class="mb-6"><h3 class="font-bold text-xl mb-3">📘 ${s.subject}</h3><div class="grid grid-cols-3 sm:grid-cols-6 gap-2">`;
+        s.plan.forEach((p, i) => {
+            html += `<div class="bg-white border border-pink-100 p-2 rounded-xl text-center text-[10px] shadow-sm">
+                <div class="text-pink-500 font-bold font-kanit">วันที่ ${i+1}</div><div>⏳ ${p}</div>
+            </div>`;
+        });
+        html += `</div></div>`;
+    });
+    document.getElementById('result').innerHTML = html;
+}
+
+async function deleteSubject(id) {
+    if(confirm("ลบวิชานี้?")) {
+        await fetch(`${API}/delete_subject/${id}`, { method: 'DELETE' });
+        location.reload();
+    }
+}
+
+init();
