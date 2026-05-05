@@ -18,7 +18,7 @@ async function addSubject() {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            user_id: userID, // ส่ง ID ไปด้วย
+            user_id: userID,
             name: name,
             deadline: deadline,
             assigned_date: assigned,
@@ -29,10 +29,10 @@ async function addSubject() {
 }
 
 async function init() {
-    const res = await fetch(`${API}/subjects?user_id=${userID}`); // ดึงตาม ID
+    const res = await fetch(`${API}/subjects?user_id=${userID}`);
     const data = await res.json();
     const list = document.getElementById('list');
-    list.innerHTML = `<h3 class="font-bold text-gray-500 mb-2 italic">📖 วิชาของคุณ</h3>`;
+    list.innerHTML = `<h3 class="font-bold text-gray-500 mb-2 italic">📖 วิชาของคุณ (เรียงตามวันส่ง)</h3>`;
     data.forEach(s => {
         list.innerHTML += `
         <div class="flex justify-between items-center p-4 bg-white rounded-2xl shadow-sm border border-pink-50">
@@ -40,12 +40,14 @@ async function init() {
             <button onclick="deleteSubject(${s.id})" class="text-red-300 hover:text-red-500 font-bold">ลบ</button>
         </div>`;
     });
+    
+    document.getElementById('result').innerHTML = "<h3 class='text-2xl font-bold text-[#ff85b3] mb-8 italic text-center'>🔥 จัดลำดับความสำคัญสำเร็จ!</h3><p class='text-center text-gray-500'>รายการวิชาทางซ้ายถูกเรียงตามวันที่ต้องส่งด่วนที่สุดแล้วค่ะ</p>";
 }
 
 async function loadSchedule() {
     const res = await fetch(`${API}/schedule?user_id=${userID}`);
     const data = await res.json();
-    let html = "<h3 class='text-2xl font-bold text-[#7c66e3] mb-8 italic border-b pb-4 text-center'>✨ ตารางแผนการอ่านหนังสือรายวัน ✨</h3>";
+    let html = "<h3 class='text-2xl font-bold text-[#7c66e3] mb-8 italic border-b pb-4 text-center'>✨ ตารางแผนการอ่านหนังสือ ✨</h3>";
     
     if (data.length === 0) {
         document.getElementById('result').innerHTML = "<p class='text-center text-gray-400 mt-20'>ยังไม่มีวิชาในตารางของคุณค่ะ</p>";
@@ -62,11 +64,14 @@ async function loadSchedule() {
             <div class="calendar-grid">`;
         
         for(let i = 1; i <= s.day_count; i++) {
+            let timeStr = "";
+            if(s.hours > 0) timeStr += `${s.hours} ชม. `;
+            timeStr += `${s.mins} นาที`;
+
             html += `
-            <div class="bg-white p-4 rounded-2xl shadow-sm border border-pink-50 text-center hover:scale-105 transition-all">
+            <div class="bg-white p-3 rounded-2xl shadow-sm border border-pink-50 text-center hover:scale-105 transition-all">
                 <div class="text-[10px] text-pink-400 font-bold mb-1 uppercase">Day ${i}</div>
-                <div class="text-sm font-bold text-gray-600">⏳ ${s.min_per_day}</div>
-                <div class="text-[9px] text-gray-400">นาที</div>
+                <div class="text-[11px] font-bold text-gray-600">${timeStr}</div>
             </div>`;
         }
         html += `</div></div>`;
