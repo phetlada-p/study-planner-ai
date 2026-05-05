@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 from datetime import datetime
-import os
+import os 
 
 app = Flask(__name__)
 CORS(app)
@@ -61,7 +61,7 @@ def delete_subject(id):
 @app.route("/schedule")
 def schedule():
     conn = db()
-    rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
+    rows = conn.execute("SELECT * FROM subjects").fetchall()
     conn.close()
     result = []
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
@@ -70,24 +70,17 @@ def schedule():
         try:
             if not s["deadline"]: continue
             deadline_date = datetime.fromisoformat(s["deadline"])
+            # คำนวณวันคงเหลือ (นับรวมวันนี้ด้วย)
             days = (deadline_date - datetime.now()).days + 1
             
             if days <= 0:
                 result.append({"subject": s["name"], "difficulty": diff_labels[s["difficulty"]], "plan": ["⚠️ ถึงกำหนดส่งแล้ว!"]})
                 continue
 
-            # Logic ชั่วโมงรวม: ง่าย=10, ปานกลาง=30, ยาก=60
-            total_needed_hours = [10, 30, 60][s["difficulty"] - 1]
-            total_needed_minutes = total_needed_hours * 60
-            
-            # คำนวณนาทีต่อวัน และใช้การปัดเศษขึ้น (Math Ceiling) แบบ Manual
-            minutes_per_day = total_needed_minutes / days
-            if minutes_per_day % 1 > 0:
-                minutes_per_day = int(minutes_per_day) + 1
-            else:
-                minutes_per_day = int(minutes_per_day)
+            total_needed = [10, 30, 60][s["difficulty"] - 1]
+            hours_per_day = total_needed / days 
 
-            plan = [f"อ่านวันละ {minutes_per_day} นาที" for i in range(days)]
+            plan = [f"อ่านวันละ {hours_per_day:.1f} ชม." for i in range(days)]
             
             result.append({
                 "subject": s["name"],
@@ -101,9 +94,8 @@ def schedule():
 def prioritize():
     conn = db()
 
-    rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
+    rows = conn.execute("SELECT * FROM subjects ORDER BY deadline ASC, difficulty DESC").fetchall()
     conn.close()
-    
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
     return jsonify([{
         "name": r["name"], 
