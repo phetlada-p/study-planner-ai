@@ -9,16 +9,31 @@ async function addSubject() {
     const assigned = document.getElementById('assigned_date').value;
     const difficulty = document.getElementById('difficulty').value;
 
+    // ดึงค่าวันหยุดจาก Checkbox หน้าจอ
+    const dayOffs = Array.from(document.querySelectorAll('.day-off-input:checked'))
+                         .map(cb => parseInt(cb.value));
+
     if (!name || !deadline) return alert("กรอกข้อมูลให้ครบก่อนนะคะ");
+
+    // บันทึกวันหยุดลง LocalStorage แยกตามวิชาหรือ User (เผื่อ API ยังไม่รองรับฟิลด์ใหม่)
+    localStorage.setItem(`dayoffs_${userID}`, JSON.stringify(dayOffs));
 
     await fetch(`${API}/subjects`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ user_id: userID, name, deadline, assigned_date: assigned, difficulty: parseInt(difficulty) })
+        body: JSON.stringify({ 
+            user_id: userID, 
+            name, 
+            deadline, 
+            assigned_date: assigned, 
+            difficulty: parseInt(difficulty),
+            day_offs: dayOffs // ส่งค่าไปเผื่อ API รองรับในอนาคต
+        })
     });
     location.reload();
 }
 
+// --- ฟังก์ชันแสดงรายการวิชา (เหมือนเดิม) ---
 async function init(mode = 'normal') {
     const res = await fetch(`${API}/subjects?user_id=${userID}`);
     const data = await res.json();
@@ -53,25 +68,61 @@ async function init(mode = 'normal') {
     }
 }
 
+// --- ฟังก์ชันโหลดตารางเรียน (ปรับปรุง Logic การคำนวณวันหยุด) ---
 async function loadSchedule() {
     const res = await fetch(`${API}/schedule?user_id=${userID}`);
     const data = await res.json();
+    
+    // ดึงค่าวันหยุดที่บันทึกไว้
+    const savedDayOffs = JSON.parse(localStorage.getItem(`dayoffs_${userID}`)) || [];
+
     let html = "<h3 class='text-2xl font-bold text-[#7c66e3] mb-8 text-center'>📅 ตารางอ่านหนังสือ</h3>";
     
     if (data.length === 0) return document.getElementById('result').innerHTML = html + "<p class='text-center mt-20 italic text-gray-400'>ยังไม่มีวิชาค่ะ</p>";
 
     data.forEach(s => {
+        // --- ส่วนการคำนวณใหม่หน้าบ้าน ---
+        let effectiveDays = 0;
+        let checkDate = new Date(); // เริ่มนับจากวันนี้
+        checkDate.setHours(0,0,0,0);
+
+        // วนลูปตามจำนวนวันที่ API ให้มา เพื่อหาว่ามีวันเรียนจริงกี่วัน
+        for(let i = 0; i < s.day_count; i++) {
+            if (!savedDayOffs.includes(checkDate.getDay())) {
+                effectiveDays++;
+            }
+            checkDate.setDate(checkDate.getDate() + 1);
+        }
+
+        // กำหนดชั่วโมงตามความยาก
+        const totalHours = s.difficulty === 3 ? 60 : (s.difficulty === 2 ? 30 : 10);
+        
+        // คำนวณเวลาใหม่ (ถ้าไม่มีวันเรียนเลย ให้ใช้ 1 เพื่อป้องกัน Error หารด้วย 0)
+        const hrsPerDay = effectiveDays > 0 ? totalHours / effectiveDays : totalHours / s.day_count;
+        const finalHrs = Math.floor(hrsPerDay);
+        const finalMins = Math.round((hrsPerDay - finalHrs) * 60);
+        const timeDisplay = finalHrs > 0 ? `${finalHrs} ชม. ${finalMins} นาที` : `${finalMins} นาที`;
+
         html += `
         <div class="mb-10 bg-[#f8f7ff] p-6 rounded-[2.5rem] border border-white">
-            <h4 class="font-bold text-xl text-gray-700 mb-5 ml-2">● ${s.subject}</h4>
+            <h4 class="font-bold text-xl text-gray-700 mb-2 ml-2">● ${s.subject}</h4>
+            <p class="text-[10px] text-gray-400 ml-2 mb-4 italic">* เรียนเฉพาะวันธรรมดา (หักวันหยุดออกแล้ว)</p>
             <div class="calendar-grid">`;
+
+        let displayDate = new Date();
+        displayDate.setHours(0,0,0,0);
+
         for(let i = 1; i <= s.day_count; i++) {
-            let timeStr = s.hours > 0 ? `${s.hours} ชม. ${s.mins} นาที` : `${s.mins} นาที`;
+            const isDayOff = savedDayOffs.includes(displayDate.getDay());
+            
             html += `
-            <div class="bg-white p-3 rounded-2xl shadow-sm border border-pink-50 text-center hover:scale-110 transition-all">
-                <div class="text-[9px] text-pink-400 font-bold uppercase mb-1">Day ${i}</div>
-                <div class="text-[11px] font-bold text-gray-600">⏳ ${timeStr}</div>
+            <div class="${isDayOff ? 'bg-gray-100 opacity-50' : 'bg-white shadow-sm border-pink-50'} p-3 rounded-2xl border text-center transition-all">
+                <div class="text-[9px] ${isDayOff ? 'text-gray-400' : 'text-pink-400'} font-bold uppercase mb-1">Day ${i}</div>
+                <div class="text-[11px] font-bold ${isDayOff ? 'text-gray-400' : 'text-gray-600'}">
+                    ${isDayOff ? '🏖️ พักผ่อน' : '⏳ ' + timeDisplay}
+                </div>
             </div>`;
+            displayDate.setDate(displayDate.getDate() + 1);
         }
         html += `</div></div>`;
     });
