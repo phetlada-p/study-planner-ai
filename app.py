@@ -1,10 +1,10 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 from datetime import datetime
 import os
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+app = Flask(__name__)
 CORS(app)
 
 def db():
@@ -28,13 +28,19 @@ init()
 
 @app.route("/")
 def index():
-    return send_from_directory('.', 'index.html')
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "ไม่พบไฟล์ index.html ใน Server"
 
 @app.route("/subjects", methods=["GET", "POST"])
 def subjects():
     conn = db()
     if request.method == "POST":
         d = request.json
+        if not d.get("name") or not d.get("deadline"):
+            return jsonify({"error": "Missing data"}), 400
         conn.execute("INSERT INTO subjects(name,assigned_date,deadline,difficulty) VALUES (?,?,?,?)",
                      (d["name"], d["assigned_date"], d["deadline"], d.get("difficulty", 1)))
         conn.commit()
@@ -55,13 +61,14 @@ def delete_subject(id):
 @app.route("/schedule")
 def schedule():
     conn = db()
-    rows = conn.execute("SELECT * FROM subjects").fetchall()
+    rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
     result = []
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
     
     for s in rows:
         try:
+            if not s["deadline"]: continue
             deadline_date = datetime.fromisoformat(s["deadline"])
             days = (deadline_date - datetime.now()).days + 1
             
@@ -69,20 +76,18 @@ def schedule():
                 result.append({"subject": s["name"], "difficulty": diff_labels[s["difficulty"]], "plan": ["⚠️ ถึงกำหนดส่งแล้ว!"]})
                 continue
 
-            total_needed = [10, 30, 60][s["difficulty"] - 1]
-            hours_decimal = total_needed / days 
-
-            h = int(hours_decimal)
-            m = int(round((hours_decimal - h) * 60))
+            # Logic ชั่วโมงรวม: ง่าย=10, ปานกลาง=30, ยาก=60
+            total_needed_hours = [10, 30, 60][s["difficulty"] - 1]
+            total_needed_minutes = total_needed_hours * 60
             
-            if h > 0 and m > 0:
-                time_text = f"{h} ชม. {m} นาที"
-            elif h > 0:
-                time_text = f"{h} ชม."
+            # คำนวณนาทีต่อวัน และใช้การปัดเศษขึ้น (Math Ceiling) แบบ Manual
+            minutes_per_day = total_needed_minutes / days
+            if minutes_per_day % 1 > 0:
+                minutes_per_day = int(minutes_per_day) + 1
             else:
-                time_text = f"{m} นาที"
+                minutes_per_day = int(minutes_per_day)
 
-            plan = [f"อ่านวันละ {time_text}" for i in range(days)]
+            plan = [f"อ่านวันละ {minutes_per_day} นาที" for i in range(days)]
             
             result.append({
                 "subject": s["name"],
@@ -95,11 +100,17 @@ def schedule():
 @app.route("/prioritize")
 def prioritize():
     conn = db()
-    rows = conn.execute("SELECT * FROM subjects ORDER BY deadline ASC, difficulty DESC").fetchall()
+
+    rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
+    
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
-    return jsonify([{"name": r["name"], "deadline": r["deadline"], "difficulty": diff_labels.get(r["difficulty"], "ไม่ระบุ")} for r in rows])
+    return jsonify([{
+        "name": r["name"], 
+        "deadline": r["deadline"], 
+        "difficulty": diff_labels.get(r["difficulty"], "ไม่ระบุ")
+    } for r in rows])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
