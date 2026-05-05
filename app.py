@@ -48,7 +48,6 @@ def subjects():
             conn.close()
             return jsonify({"ok": True})
         except Exception as e:
-            print(f"Error: {e}") 
             return jsonify({"error": str(e)}), 500
     
     conn = get_db()
@@ -67,7 +66,7 @@ def delete_subject(id):
 @app.route("/schedule")
 def schedule():
     conn = get_db()
-    # เรียงความยากลงมาเพื่อให้วางแผนวิชาหนักก่อน
+  
     rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
     result = []
@@ -75,19 +74,17 @@ def schedule():
     for s in rows:
         try:
             deadline_date = datetime.fromisoformat(s["deadline"])
-            days = (deadline_date - datetime.now()).days + 1
-            if days <= 0:
-                result.append({"subject": s["name"], "difficulty": diff_labels[s["difficulty"]], "plan": ["⚠️ ถึงกำหนดส่งแล้ว!"]})
-                continue
+            assigned_date = datetime.fromisoformat(s["assigned_date"])
+            days = (deadline_date - assigned_date).days + 1
+            if days <= 0: days = 1
             
-            # คำนวณเป็นนาที (ง่าย=10ชม, กลาง=30ชม, ยาก=60ชม)
             total_min = [10, 30, 60][s["difficulty"] - 1] * 60
             min_per_day = int(total_min / days) + (1 if (total_min / days) % 1 > 0 else 0)
             
             result.append({
                 "subject": s["name"],
                 "difficulty": diff_labels[s["difficulty"]],
-                "plan": [f"อ่านวันละ {min_per_day} นาที" for _ in range(days)]
+                "plan": [f"{min_per_day} นาที" for _ in range(days)]
             })
         except: continue
     return jsonify(result)
@@ -95,7 +92,7 @@ def schedule():
 @app.route("/prioritize")
 def prioritize():
     conn = get_db()
-    # จุดสำคัญ: เรียงความยาก (DESC) มาก่อน วันส่ง (ASC)
+
     rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
