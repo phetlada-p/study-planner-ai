@@ -14,7 +14,6 @@ def db():
 
 def init():
     c = db()
-    # เพิ่มคอลัมน์ user_id เพื่อแยกเครื่อง
     c.execute("""CREATE TABLE IF NOT EXISTS subjects(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT,
@@ -43,9 +42,8 @@ def subjects():
         conn.close()
         return jsonify({"ok": True})
     
-    # ดึงเฉพาะข้อมูลของ User ID นั้นๆ
     uid = request.args.get("user_id")
-    rows = conn.execute("SELECT * FROM subjects WHERE user_id = ?", (uid,)).fetchall()
+    rows = conn.execute("SELECT * FROM subjects WHERE user_id = ? ORDER BY deadline ASC", (uid,)).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
@@ -72,7 +70,16 @@ def schedule():
             if days <= 0: days = 1
             total_min = [10, 30, 60][s["difficulty"] - 1] * 60
             min_per_day = int(total_min / days)
-            result.append({"subject": s["name"], "day_count": days, "min_per_day": min_per_day})
+            
+            hours = min_per_day // 60
+            remaining_min = min_per_day % 60
+            
+            result.append({
+                "subject": s["name"], 
+                "day_count": days, 
+                "hours": hours,
+                "mins": remaining_min
+            })
         except: continue
     return jsonify(result)
 
