@@ -14,8 +14,10 @@ def db():
 
 def init():
     c = db()
+    # เพิ่มคอลัมน์ user_id เพื่อแยกเครื่อง
     c.execute("""CREATE TABLE IF NOT EXISTS subjects(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT,
         name TEXT,
         assigned_date TEXT,
         deadline TEXT,
@@ -35,54 +37,44 @@ def subjects():
     conn = db()
     if request.method == "POST":
         d = request.json
-        conn.execute("INSERT INTO subjects(name,assigned_date,deadline,difficulty) VALUES (?,?,?,?)",
-                     (d["name"], d.get("assigned_date"), d["deadline"], d.get("difficulty", 1)))
+        conn.execute("INSERT INTO subjects(user_id, name,assigned_date,deadline,difficulty) VALUES (?,?,?,?,?)",
+                     (d.get("user_id"), d["name"], d.get("assigned_date"), d["deadline"], d.get("difficulty", 1)))
         conn.commit()
         conn.close()
         return jsonify({"ok": True})
     
-    rows = conn.execute("SELECT * FROM subjects").fetchall()
+    # ดึงเฉพาะข้อมูลของ User ID นั้นๆ
+    uid = request.args.get("user_id")
+    rows = conn.execute("SELECT * FROM subjects WHERE user_id = ?", (uid,)).fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
 
 @app.route("/delete_subject/<int:id>", methods=["DELETE"])
 def delete_subject(id):
+    uid = request.args.get("user_id")
     conn = db()
-    conn.execute("DELETE FROM subjects WHERE id = ?", (id,))
+    conn.execute("DELETE FROM subjects WHERE id = ? AND user_id = ?", (id, uid))
     conn.commit()
     conn.close()
     return jsonify({"ok": True})
 
 @app.route("/schedule")
 def schedule():
+    uid = request.args.get("user_id")
     conn = db()
-    rows = conn.execute("SELECT * FROM subjects").fetchall()
+    rows = conn.execute("SELECT * FROM subjects WHERE user_id = ?", (uid,)).fetchall()
     conn.close()
     result = []
     for s in rows:
         try:
             deadline_date = datetime.fromisoformat(s["deadline"])
-            
             days = (deadline_date - datetime.now()).days + 1
             if days <= 0: days = 1
-            
             total_min = [10, 30, 60][s["difficulty"] - 1] * 60
             min_per_day = int(total_min / days)
-            
-            result.append({
-                "subject": s["name"],
-                "plan": f"อ่านวันละ {min_per_day} นาที (เหลือเวลา {days} วัน)"
-            })
+            result.append({"subject": s["name"], "day_count": days, "min_per_day": min_per_day})
         except: continue
     return jsonify(result)
-
-@app.route("/prioritize")
-def prioritize():
-    conn = db()
-    # เรียงตามวันส่ง (Deadline) จากใกล้ไปไกล
-    rows = conn.execute("SELECT * FROM subjects ORDER BY deadline ASC").fetchall()
-    conn.close()
-    return jsonify([dict(r) for r in rows])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
