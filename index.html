@@ -8,7 +8,7 @@
     <style>
         body { font-family: 'Kanit', sans-serif; background: #fff5f7; }
         .glass-card { background: white; border-radius: 2.5rem; border: 1px solid #ffe4ec; }
-        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -39,22 +39,24 @@
                     </div>
                 </div>
 
-                <div id="list" class="space-y-3">
-                    </div>
+                <div id="list" class="space-y-3"></div>
             </div>
 
             <div class="lg:col-span-2">
                 <div class="flex gap-4 mb-6">
-                    <button onclick="loadSchedule()" class="flex-1 bg-[#7c66e3] text-white py-4 rounded-2xl font-bold shadow-lg hover:opacity-90 transition-all">
+                    <button onclick="loadSchedule()" class="flex-1 bg-[#7c66e3] text-white py-4 rounded-2xl font-bold shadow-lg hover:opacity-90">
                         📅 แสดงตารางปฏิทิน
+                    </button>
+                    <button onclick="init()" class="flex-1 bg-[#ff85b3] text-white py-4 rounded-2xl font-bold shadow-lg hover:opacity-90">
+                        🔥 จัดลำดับงาน
                     </button>
                 </div>
                 <div id="result" class="bg-white p-6 rounded-[2rem] min-h-[500px] border border-pink-50 shadow-inner overflow-y-auto">
-                    <p class="text-center text-gray-300 mt-20 italic">กดปุ่มด้านบนเพื่อจัดตาราง...</p>
+                    <p class="text-center text-gray-300 mt-20 italic">เลือกฟังก์ชันที่ต้องการ...</p>
                 </div>
             </div>
         </div>
     </div>
-    <script src="scrip.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
