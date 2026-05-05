@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import sqlite3
+from datetime import datetime
 import os
 
 app = Flask(__name__, static_folder='.', static_url_path='')
@@ -52,10 +53,33 @@ def delete_subject(id):
     conn.close()
     return jsonify({"ok": True})
 
+@app.route("/schedule")
+def schedule():
+    conn = db()
+    rows = conn.execute("SELECT * FROM subjects").fetchall()
+    conn.close()
+    result = []
+    for s in rows:
+        try:
+            deadline_date = datetime.fromisoformat(s["deadline"])
+            
+            days = (deadline_date - datetime.now()).days + 1
+            if days <= 0: days = 1
+            
+            total_min = [10, 30, 60][s["difficulty"] - 1] * 60
+            min_per_day = int(total_min / days)
+            
+            result.append({
+                "subject": s["name"],
+                "plan": f"อ่านวันละ {min_per_day} นาที (เหลือเวลา {days} วัน)"
+            })
+        except: continue
+    return jsonify(result)
+
 @app.route("/prioritize")
 def prioritize():
     conn = db()
-    # เรียงตามวันส่ง (Deadline)
+    # เรียงตามวันส่ง (Deadline) จากใกล้ไปไกล
     rows = conn.execute("SELECT * FROM subjects ORDER BY deadline ASC").fetchall()
     conn.close()
     return jsonify([dict(r) for r in rows])
