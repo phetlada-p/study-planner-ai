@@ -36,7 +36,7 @@ def subjects():
     conn = db()
     if request.method == "POST":
         d = request.json
-        conn.execute("INSERT INTO subjects(user_id, name,assigned_date,deadline,difficulty) VALUES (?,?,?,?,?)",
+        conn.execute("INSERT INTO subjects(user_id, name, assigned_date, deadline, difficulty) VALUES (?,?,?,?,?)",
                      (d.get("user_id"), d["name"], d.get("assigned_date"), d["deadline"], d.get("difficulty", 1)))
         conn.commit()
         conn.close()
@@ -68,17 +68,18 @@ def schedule():
             deadline_date = datetime.fromisoformat(s["deadline"])
             days = (deadline_date - datetime.now()).days + 1
             if days <= 0: days = 1
+            
             total_min = [10, 30, 60][s["difficulty"] - 1] * 60
             min_per_day = int(total_min / days)
             
             hours = min_per_day // 60
-            remaining_min = min_per_day % 60
+            mins = min_per_day % 60
             
             result.append({
                 "subject": s["name"], 
                 "day_count": days, 
                 "hours": hours,
-                "mins": remaining_min
+                "mins": mins
             })
         except: continue
     return jsonify(result)
