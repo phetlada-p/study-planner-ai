@@ -32,15 +32,12 @@ def index():
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "ไม่พบไฟล์ index.html ใน Server"
+        return "ไม่พบไฟล์ index.html"
 
 @app.route("/subjects", methods=["GET", "POST"])
 def subjects():
     if request.method == "POST":
         d = request.json
-        if not d or not d.get("name") or not d.get("deadline"):
-            return jsonify({"error": "Missing data"}), 400
-        
         try:
             conn = get_db()
             conn.execute("INSERT INTO subjects(name,assigned_date,deadline,difficulty) VALUES (?,?,?,?)",
@@ -58,74 +55,52 @@ def subjects():
 
 @app.route("/delete_subject/<int:id>", methods=["DELETE"])
 def delete_subject(id):
-    try:
-        conn = get_db()
-        conn.execute("DELETE FROM subjects WHERE id = ?", (id,))
-        conn.commit()
-        conn.close()
-        return jsonify({"ok": True})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    conn = get_db()
+    conn.execute("DELETE FROM subjects WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
 
 @app.route("/schedule")
 def schedule():
     conn = get_db()
+    # เรียงความยากลงมาเพื่อให้วางแผนวิชาหนักก่อน
     rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
-    
     result = []
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
-    
     for s in rows:
         try:
-            if not s["deadline"]: continue
             deadline_date = datetime.fromisoformat(s["deadline"])
-            # คำนวณวันคงเหลือ
             days = (deadline_date - datetime.now()).days + 1
-            
             if days <= 0:
-                result.append({
-                    "subject": s["name"], 
-                    "difficulty": diff_labels.get(s["difficulty"], "ไม่ระบุ"), 
-                    "plan": ["⚠️ ถึงกำหนดส่งแล้ว!"]
-                })
+                result.append({"subject": s["name"], "difficulty": diff_labels[s["difficulty"]], "plan": ["⚠️ ถึงกำหนดส่งแล้ว!"]})
                 continue
-
-            total_hours = [10, 30, 60][s["difficulty"] - 1]
-            total_minutes = total_hours * 60
             
-            # คำนวณนาทีต่อวัน (ใช้ปัดเศษขึ้นเพื่อให้ครอบคลุมเวลาอ่าน)
-            minutes_per_day = total_minutes / days
-            if minutes_per_day % 1 > 0:
-                minutes_per_day = int(minutes_per_day) + 1
-            else:
-                minutes_per_day = int(minutes_per_day)
-
-            plan = [f"อ่านวันละ {minutes_per_day} นาที" for i in range(days)]
+            # คำนวณเป็นนาที (ง่าย=10ชม, กลาง=30ชม, ยาก=60ชม)
+            total_min = [10, 30, 60][s["difficulty"] - 1] * 60
+            min_per_day = int(total_min / days) + (1 if (total_min / days) % 1 > 0 else 0)
             
             result.append({
                 "subject": s["name"],
-                "difficulty": diff_labels.get(s["difficulty"], "ไม่ระบุ"),
-                "plan": plan
+                "difficulty": diff_labels[s["difficulty"]],
+                "plan": [f"อ่านวันละ {min_per_day} นาที" for _ in range(days)]
             })
-        except:
-            continue
+        except: continue
     return jsonify(result)
 
 @app.route("/prioritize")
 def prioritize():
     conn = get_db()
+    # จุดสำคัญ: เรียงความยาก (DESC) มาก่อน วันส่ง (ASC)
     rows = conn.execute("SELECT * FROM subjects ORDER BY difficulty DESC, deadline ASC").fetchall()
     conn.close()
-    
     diff_labels = {1: "ง่าย", 2: "ปานกลาง", 3: "ยาก"}
     return jsonify([{
-        "id": r["id"],
-        "name": r["name"], 
-        "deadline": r["deadline"], 
+        "id": r["id"], "name": r["name"], "deadline": r["deadline"], 
         "difficulty": diff_labels.get(r["difficulty"], "ไม่ระบุ")
     } for r in rows])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(host='0.0.0.0', port=port)
